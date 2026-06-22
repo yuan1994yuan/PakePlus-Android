@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>健康小勇士 · 教案闯关工坊 | 幼儿园健康领域专训</title>
+ <!-- 本地离线JS库，打包软件断网可用 -->
+<script src="./lib/html2canvas.min.js"></script>
+<script src="./lib/jspdf.umd.min.js"></script>
+<script src="./lib/tesseract.min.js"></script>
+<script src="./lib/chart.umd.min.js"></script>
+<!-- 指定OCR中文字库本地路径，安卓/电脑离线识别生效 -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #f0f7ff 0%, #e9f0fa 100%);
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.25);
+            overflow: hidden;
+        }
+        .student-bar {
+            background: white;
+            padding: 16px 20px;
+            border-bottom: 1px solid #ffe2c9;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+            background: #fffaf5;
+        }
+        .info-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1 1 auto;
+        }
+        .info-group label {
+            font-weight: 600;
+            color: #c25d2e;
+            font-size: 0.75rem;
+        }
+        .info-group input {
+            border: 1px solid #ffd6b5;
+            border-radius: 60px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            width: 100%;
+            background: #fffef7;
+        }
+        .student-status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+        }
+        .info-tip {
+            background: #fde6d8;
+            border-radius: 40px;
+            padding: 6px 14px;
+            font-size: 0.75rem;
+            color: #b45a2e;
+            white-space: nowrap;
+        }
+        .main-dashboard {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .levels-sidebar {
+            width: 260px;
+            background: #fef5ed;
+            padding: 24px 12px;
+            border-right: 1px solid #ffe0ca;
+            transition: all 0.2s;
+        }
+        .levels-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .level-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            border-radius: 60px;
+            background: white;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid #ffe0ca;
+        }
+        .level-item.active {
+            background: #ffede3;
+            border-left: 5px solid #f39c6d;
+            border-color: #f39c6d;
+            box-shadow: 0 6px 14px rgba(243,156,109,0.2);
+        }
+        .level-number {
+            font-weight: 800;
+            font-size: 1.1rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffd8c4;
+            border-radius: 40px;
+            color: #aa5e39;
+        }
+        .level-name {
+            flex: 1;
+            font-weight: 600;
+            color: #4e3e32;
+            font-size: 0.9rem;
+        }
+        .level-status {
+            font-size: 1.2rem;
+        }
+        .level-item.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #f9f3ec;
+        }
+        .content-panel {
+            flex: 1;
+            padding: 20px 24px;
+            background: white;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            border-bottom: 2px dashed #ffe0ca;
+            padding-bottom: 12px;
+        }
+        .panel-header h2 {
+            color: #c16234;
+            font-size: 1.6rem;
+        }
+        .score-area {
+            background: #fef1e6;
+            padding: 4px 16px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+        .editor-box {
+            margin: 20px 0 24px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 220px;
+            padding: 16px;
+            border-radius: 24px;
+            border: 1px solid #ffddc4;
+            background: #fefaf7;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .process-subsection {
+            margin-bottom: 24px;
+            border: 1px solid #ffe0ca;
+            border-radius: 24px;
+            padding: 16px;
+            background: #fffbf8;
+        }
+        .process-subsection label {
+            font-weight: 700;
+            color: #c25d2e;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+        .process-subsection textarea {
+            min-height: 120px;
+        }
+        .criteria-tag {
+            background: #f7e9df;
+            border-radius: 30px;
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            color: #aa6e48;
+            margin-bottom: 16px;
+            white-space: pre-wrap;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        button {
+            border: none;
+            background: #f3a683;
+            color: white;
+            font-weight: 700;
+            padding: 10px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+            flex: 1 0 auto;
+        }
+        button.secondary {
+            background: #e9cbb9;
+            color: #7b4a2c;
+        }
+        button.primary {
+            background: #e67e3a;
+            box-shadow: 0 4px 12px rgba(230,126,34,0.3);
+        }
+        button:active {
+            transform: scale(0.97);
+        }
+        button:disabled {
+            background: #d1c7bf;
+            cursor: not-allowed;
+        }
+        .feedback {
+            margin-top: 20px;
+            padding: 12px 16px;
+            border-radius: 24px;
+            background: #f8f3ef;
+            font-size: 0.85rem;
+        }
+        .export-area {
+            margin-top: 24px;
+            text-align: right;
+            border-top: 1px solid #ffe0ca;
+            padding-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .report-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .report-card {
+            background: white;
+            border-radius: 2rem;
+            max-width: 700px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 24px;
+            box-shadow: 0 30px 50px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .report-card h3 {
+            color: #c16234;
+            margin-bottom: 16px;
+            border-left: 5px solid #f39c6d;
+            padding-left: 16px;
+        }
+        .close-report {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            background: #f0f0f0;
+            border-radius: 40px;
+            width: 32px;
+            height: 32px;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .chart-container {
+            margin: 20px 0;
+            height: 300px;
+        }
+        .suggestion-box {
+            background: #fef4e8;
+            border-radius: 24px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        .upload-area {
+            margin-top: 16px;
+            background: #fef9f0;
+            border-radius: 24px;
+            padding: 16px;
+            border: 1px dashed #f3a683;
+            text-align: center;
+        }
+        .upload-area input {
+            margin: 8px 0;
+        }
+        /* PDF导出专用样式 (用于打印降级方案) */
+        .pdf-export-container {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            width: 800px;
+            background: white;
+            padding: 40px 35px;
+            font-family: 'Times New Roman', SimSun, '宋体', serif;
+            line-height: 1.5;
+            z-index: -1;
+            box-sizing: border-box;
+        }
+        .print-only {
+            display: none;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-only, .print-only * {
+                visibility: visible;
+            }
+            .print-only {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                padding: 20px;
+                display: block;
+            }
+            .levels-sidebar, .student-bar, .action-buttons, .export-area button, .feedback, .criteria-tag, .panel-header .score-area, .student-status, .upload-area {
+                display: none !important;
+            }
+        }
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .student-bar { flex-direction: column; align-items: stretch; padding: 14px; }
+            .student-status { margin-left: 0; justify-content: flex-end; }
+            .levels-sidebar { width: 100%; padding: 12px 8px; border-right: none; border-bottom: 1px solid #ffe0ca; overflow-x: auto; white-space: nowrap; }
+            .levels-list { flex-direction: row; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+            .level-item { flex-shrink: 0; width: auto; min-width: 110px; padding: 8px 14px; }
+            .level-number { width: 28px; height: 28px; font-size: 1rem; }
+            .level-name { font-size: 0.85rem; }
+            .content-panel { padding: 16px; }
+            .panel-header h2 { font-size: 1.4rem; }
+            .score-area { font-size: 0.75rem; padding: 4px 12px; }
+            textarea { font-size: 0.9rem; min-height: 180px; }
+            .process-subsection textarea { min-height: 100px; }
+            .action-buttons button { padding: 8px 16px; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="student-bar">
+        <div class="info-group"><label>📚 班级</label><input type="text" id="className" placeholder="例：学前教育2101班" autocomplete="off"></div>
+        <div class="info-group"><label>👩‍🎓 姓名</label><input type="text" id="studentName" placeholder="真实姓名" autocomplete="off"></div>
+        <div class="info-group"><label>🆔 学号</label><input type="text" id="studentId" placeholder="2024xxxx" autocomplete="off"></div>
+        <div class="student-status"><span class="info-tip">✏️ 填写后闯关</span></div>
+    </div>
+
+    <div class="main-dashboard">
+        <div class="levels-sidebar">
+            <div class="levels-list" id="levelsList"></div>
+        </div>
+        <div class="content-panel" id="contentPanel">
+            <div class="panel-header">
+                <h2 id="currentLevelTitle">活动名称</h2>
+                <div class="score-area" id="scoreDisplay">⚡ 未评分</div>
+            </div>
+            <div class="criteria-tag" id="criteriaHint">✨ 标准预览：请按教案规范撰写</div>
+            <div class="editor-box" id="editorBox">
+                <textarea id="levelContent" placeholder="在此填写本关教案内容..."></textarea>
+            </div>
+            <div class="action-buttons">
+                <button id="submitBtn" class="primary">📝 提交评分 (≥90分通关)</button>
+                <button id="resetBtn" class="secondary">🔄 重置当前关卡</button>
+            </div>
+            <div class="feedback" id="feedbackMsg">💡 请按要求填写教案，提交后自动评分，达到90分即可解锁下一关。</div>
+            <div class="export-area" id="exportArea" style="display: none;">
+                <button id="exportPdfBtn" class="primary">📄 导出完整教案PDF</button>
+                <button id="analyzeBtn" class="primary" style="background:#6c5ce7;">📊 成长对比分析</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- 强制禁止粘贴逻辑（全面阻止） ----------
+    function preventPasteOnElement(el) {
+        if (!el) return;
+        el.addEventListener('paste', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            alert('❌ 禁止粘贴，请手动输入教案内容。');
+            return false;
+        });
+        el.addEventListener('drop', (e) => {
+            e.preventDefault();
+            alert('❌ 禁止拖拽粘贴，请手动输入。');
+            return false;
+        });
+        el.setAttribute('onpaste', 'return false;');
+    }
+
+    function applyNoPasteToAllInputs() {
+        document.querySelectorAll('textarea, input').forEach(el => preventPasteOnElement(el));
+    }
+
+    // ---------- 核心闯关逻辑 (七关) ----------
+    const levels = [
+        { id: 0, name: "活动名称", key: "activityName", hintTemplate: "【健康领域专用】必须包含年龄班（小/中/大班）、领域必须为“健康”、具体名称。示例：'中班健康领域活动：牙齿大闯关' 或 '大班健康活动：快乐的小手'。缺少“健康”二字不得分。" },
+        { id: 1, name: "活动设计意图", key: "designIntent", hintTemplate: "要求：结合《纲要》或《指南》健康领域要求 + 对幼儿当前年龄/发展实际状况的描述；且总字数不少于50字。示例：依据《指南》健康领域动作发展目标……结合中班幼儿大肌肉发展迅速、好奇心强的特点……" },
+        { id: 2, name: "活动目标", key: "activityGoals", hintTemplate: "要求：认知、技能、情感三维目标，从幼儿角度出发；每条目标至少15个汉字。示例：1.认知：知道牙齿清洁的重要性……；2.技能：能够掌握正确刷牙方法……；3.情感：愿意主动保护牙齿……" },
+        { id: 3, name: "活动重难点", key: "keyDifficult", hintTemplate: "要求：分别写出重点和难点，从幼儿角度表述。示例：重点：幼儿能够理解保护牙齿的方法；难点：幼儿能坚持饭后漱口。" },
+        { id: 4, name: "活动准备", key: "preparation", hintTemplate: "要求：经验准备 + 物质准备，两类缺一不可。示例：经验准备：幼儿已有刷牙经验；物质准备：牙齿模型、牙刷、绘本。" },
+        { id: 5, name: "活动过程", key: "process", hintTemplate: "【格式示例】\n导入环节（具体方式≥15字）：教师出示大牙刷手偶，以“牙齿小卫士”情景游戏导入。\n展开环节（至少3个步骤+师幼互动+游戏）：1.观察牙齿模型（提问互动）；2.游戏“蛀牙大作战”（师幼一起玩打败细菌游戏）；3.学习刷牙歌（律动表演）。\n结束环节（具体方式≥15字）：教师总结护牙方法，伴随音乐做牙齿放松操。" },
+        { id: 6, name: "活动延伸", key: "extension", hintTemplate: "要求：至少两种延伸方式（家庭延伸、家园共育、区域延伸、区角活动、日常活动、其他领域等），不能写“回家讲给爸爸妈妈听”。示例：1.益智区：牙齿配对游戏；2.家庭延伸：和父母一起制作刷牙记录卡。" }
+    ];
+
+    let contents = ["", "", "", "", "", { intro: "", expand: "", end: "" }, ""];
+    let passed = [false, false, false, false, false, false, false];
+    let unlocked = [true, false, false, false, false, false, false];
+    let errorCount = [0, 0, 0, 0, 0, 0, 0];
+    let currentLevel = 0;
+
+    const levelsListDiv = document.getElementById("levelsList");
+    const editorBox = document.getElementById("editorBox");
+    const submitBtn = document.getElementById("submitBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const feedbackDiv = document.getElementById("feedbackMsg");
+    const scoreDisplaySpan = document.getElementById("scoreDisplay");
+    const currentLevelTitle = document.getElementById("currentLevelTitle");
+    const criteriaHintSpan = document.getElementById("criteriaHint");
+    const exportArea = document.getElementById("exportArea");
+    const exportPdfBtn = document.getElementById("exportPdfBtn");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+
+    // ---------- 评分辅助函数 (保持不变) ----------
+    function extractCoreKeywordFromName(t) { if(!t) return null; let a=t.trim().split(/[：:]/).pop(); let c=a.replace(/小班|中班|大班|健康|语言|社会|科学|艺术|领域|活动|有趣的|可爱的/g,'').replace(/[，,。？！；：""''、]/g,'').trim(); if(c.length>8)c=c.slice(-8); if(!c.length){let r=t.replace(/[^一-龥]/g,''); c=r.slice(-4);} return c; }
+    function isRelatedToCoreKeyword(t,k){ if(!k) return true; return t.includes(k); }
+    function parseGoalsAndCheck(g){ if(!g.trim()) return {valid:false, reasons:"不能为空"}; let lines=g.split(/\r?\n/); let goals=[]; for(let l of lines){ l=l.trim(); if(!l) continue; let clean=l.replace(/^[\d一二三四五六七八九十]+[、.．]\s*/,'').replace(/^[①②③④]\s*/,''); if(clean.length) goals.push(clean); } if(goals.length<3) {let tmp=g.split(/[；;]|\n/); for(let t of tmp){ let ct=t.trim().replace(/^[\d一二三四五六七八九十]+[、.．]\s*/,''); if(ct.length>5 && goals.length<5) goals.push(ct);}} if(goals.length<3) return {valid:false, reasons:`目标条数不足3条`}; let allLen=true, errs=[]; for(let i=0;i<goals.length;i++) if(goals[i].replace(/\s/g,'').length<15){ allLen=false; errs.push(`第${i+1}条目标字数不足15`); } return allLen?{valid:true}:{valid:false, reasons:errs.join('；')}; }
+    function evaluateProcessParts(i,e,en){ let iL=i.replace(/\s/g,'').length, eL=en.replace(/\s/g,'').length; let iOk=iL>=15, eOk=eL>=15; let stepCount=(e.match(/(1[\.、．]|2[\.、．]|3[\.、．]|第一步|第二步|第三步|首先|然后|接着|再|最后|一、|二、|三、)/g)||[]).length; if(e.includes("1.")&&e.includes("2.")&&e.includes("3.")) stepCount=Math.max(stepCount,3); let hasInter=/提问|回答|幼儿说|幼儿操作|师幼互动|讨论|分享|交流|教师引导/.test(e); let hasGame=/游戏|玩一玩|竞赛|角色扮演|模仿|律动|闯关/.test(e); let expOk=(stepCount>=3)&&hasInter&&hasGame; let s=0; if(iOk) s+=34; if(expOk) s+=33; if(eOk) s+=33; return {score:Math.min(100,s), details:`导入字数${iL}(${iOk?'达标':'不足'}) 展开步骤${stepCount} 互动${hasInter?'有':'无'}游戏${hasGame?'有':'无'} 结束字数${eL}`}; }
+    function evaluateExtension(ext){ let t=ext; if(/回家讲给爸爸妈妈听|回家告诉父母/.test(t)) return {score:0, details:"禁止回家讲给父母"}; let w=0; if(/区角|区域活动|区域延伸/.test(t)) w++; if(/其他领域|科学领域|艺术领域/.test(t)) w++; if(/日常活动|生活活动|户外/.test(t)) w++; if(/家庭延伸|家园共育|亲子/.test(t)) w++; if(/绘画|手工|表演|音乐/.test(t)) w++; if(w>=2) return {score:100, details:`${w}种方式合格`}; else if(w==1) return {score:60, details:"仅1种延伸"}; else return {score:30, details:"未明确两种"}; }
+    function hasChildStatusDescription(text) {
+        const patterns = [/幼儿|孩子|小朋友/, /年龄|阶段|时期/, /特点|特征|表现|行为/, /好动|好奇|爱玩|喜欢|兴趣/, /发展|成长|认知|经验|能力/, /实际|现状|已有|需要/, /小班|中班|大班/, /注意力|坚持性|模仿|探索/];
+        let hasChild = /幼儿|孩子|小朋友/.test(text);
+        let hasDesc = patterns.some(p => p.test(text));
+        if (hasChild && hasDesc) return true;
+        if (/小班|中班|大班/.test(text) && /喜欢|能够|发展|特点/.test(text)) return true;
+        return false;
+    }
+    function getDetailedScore(levelIdx, obj, all){
+        let core=all[0]?extractCoreKeywordFromName(all[0]):"";
+        if(levelIdx!==0 && core){
+            let check=""; if(levelIdx===5 && typeof obj==='object') check=(obj.intro||"")+(obj.expand||"")+(obj.end||""); else if(typeof obj==='string') check=obj;
+            if(!isRelatedToCoreKeyword(check,core)) return {score:40, feedback:`与核心词“${core}”不相关`};
+        }
+        switch(levelIdx){
+            case 0: let c=obj.trim(); if(!/健康/.test(c)) return {score:0, feedback:"缺少“健康”二字"}; let s=0; if(/小班|中班|大班/.test(c)) s+=30; if(/健康/.test(c)) s+=30; if(c.length>5 && /：|:/.test(c) && c.split(/[：:]/).pop().length>=2) s+=40; else if(c.length>8) s+=20; return {score:s, feedback:`年龄班${/小班|中班|大班/.test(c)?'✔':'✘'} 名称${s>=90?'完整':'需完善'}`};
+            case 1: let txt=obj.trim(); let len=txt.replace(/\s/g,'').length; if(len<50) return {score:20, feedback:`字数不足50（${len}字）`}; let ho=/《纲要》|《指南》|纲要|指南/.test(txt); let hs=hasChildStatusDescription(txt); let sc=(ho?50:0)+(hs?50:0); return {score:sc, feedback:`字数${len} 纲要${ho?'✔':'✘'} 幼儿现状描述${hs?'✔':'✘'}`};
+            case 2: let gRes=parseGoalsAndCheck(obj); if(!gRes.valid) return {score:30, feedback:gRes.reasons}; return {score:100, feedback:"三维目标完整每≥15字"};
+            case 3: let hn=obj; let hk=/重点[:：]|重点\s/.test(hn); let hd=/难点[:：]|难点\s/.test(hn); return {score:(hk?50:0)+(hd?50:0), feedback:`重点${hk?'✔':'✘'}难点${hd?'✔':'✘'}`};
+            case 4: let p=obj; let hExp=/经验准备|已有经验/.test(p); let hMat=/物质准备|材料准备/.test(p); return {score:(hExp?50:0)+(hMat?50:0), feedback:`经验${hExp?'✔':'✘'}物质${hMat?'✔':'✘'}`};
+            case 5: let parts=obj; if(!parts.intro && !parts.expand && !parts.end) return {score:0, feedback:"过程内容空"}; let procRes=evaluateProcessParts(parts.intro||"", parts.expand||"", parts.end||""); return {score:procRes.score, feedback:procRes.details};
+            case 6: let extRes=evaluateExtension(obj); return {score:extRes.score, feedback:extRes.details};
+            default: return {score:0, feedback:''};
+        }
+    }
+    function getIntentImprovementAdvice(t){ 
+        let hasO=/(《纲要》|《指南》|纲要|指南)/.test(t); 
+        let hasS=hasChildStatusDescription(t);
+        let len=t.replace(/\s/g,'').length; 
+        let adv=""; 
+        if(len<50) adv+=`📏字数仅${len}，需扩充至50字以上。`; 
+        if(!hasO) adv+=" 📚缺少引用《纲要》/《指南》。"; 
+        if(!hasS) adv+=" 👶请添加对幼儿当前年龄/发展实际状况的描述（如“中班幼儿好动、喜欢游戏”等）。"; 
+        if(hasO&&hasS&&len>=50) adv="已包含纲要和幼儿现状，可进一步深化逻辑联系，让设计意图更充实。"; 
+        return adv||"请参考示例完善内容。"; 
+    }
+    function updateUnlockStatus(){ for(let i=0;i<levels.length;i++){ if(i===0) unlocked[i]=true; else{ let prev=true; for(let j=0;j<i;j++) if(!passed[j]){prev=false;break;} unlocked[i]=prev; } } for(let i=0;i<levels.length;i++) if(!unlocked[i] && passed[i]) passed[i]=false; for(let i=1;i<levels.length;i++){ let prev=true; for(let j=0;j<i;j++) if(!passed[j]){prev=false;break;} if(!prev) passed[i]=false; } renderLevelsSidebar(); let allPass=passed.every(p=>p===true); exportArea.style.display=allPass?"flex":"none"; if(!unlocked[currentLevel]){ let first=levels.findIndex((_,idx)=>unlocked[idx]); if(first!==-1) setCurrentLevel(first); } else refreshCurrentEditorUI(); }
+    function updateCriteriaHint(lvl,fail){ let base=levels[lvl].hintTemplate; if(fail>=2) criteriaHintSpan.innerHTML=`📌【格式示例】${base}`; else { let short="✍️ 请按规范撰写，两次失败显示示例。"; if(lvl===1) short="✍️ 设计意图需满50字，结合《指南》及幼儿现状描述（年龄特点、兴趣等）。"; else if(lvl===2) short="✍️ 目标每条≥15字，三维。"; else if(lvl===5) short="✍️ 过程导入/展开(3步骤+互动+游戏)/结束。"; else if(lvl===6) short="✍️ 至少两种延伸（区域/家庭等）。"; criteriaHintSpan.innerHTML=`✨ ${short}`; } }
+    function renderEditorForLevel(lvl){
+        editorBox.innerHTML="";
+        if(lvl===5){
+            let stored=contents[5]; let iv=stored?stored.intro:"", ev=stored?stored.expand:"", en=stored?stored.end:"";
+            editorBox.innerHTML=`<div class="process-subsection"><label>🎬 导入环节</label><textarea id="processIntro" placeholder="具体方式≥15字"></textarea></div>
+                                 <div class="process-subsection"><label>📚 展开环节</label><textarea id="processExpand" placeholder="至少3步骤+互动+游戏"></textarea></div>
+                                 <div class="process-subsection"><label>🏁 结束环节</label><textarea id="processEnd" placeholder="具体方式≥15字"></textarea></div>`;
+            let iTa=document.getElementById("processIntro"), eTa=document.getElementById("processExpand"), enTa=document.getElementById("processEnd");
+            if(iTa) iTa.value=iv; if(eTa) eTa.value=ev; if(enTa) enTa.value=en;
+            let save=()=>{ if(unlocked[currentLevel]) contents[5]={intro:iTa.value, expand:eTa.value, end:enTa.value}; };
+            if(iTa){ iTa.addEventListener("input",save); preventPasteOnElement(iTa); }
+            if(eTa){ eTa.addEventListener("input",save); preventPasteOnElement(eTa); }
+            if(enTa){ enTa.addEventListener("input",save); preventPasteOnElement(enTa); }
+        } else {
+            let ta=document.createElement("textarea"); ta.id="levelContent"; ta.placeholder="请填写..."; ta.value=typeof contents[lvl]==='string'?contents[lvl]:"";
+            ta.addEventListener("input",()=>{ if(unlocked[currentLevel]) contents[currentLevel]=ta.value; });
+            editorBox.appendChild(ta); preventPasteOnElement(ta);
+        }
+        applyNoPasteToAllInputs();
+    }
+    function refreshCurrentEditorUI(){ let l=currentLevel; submitBtn.disabled=!unlocked[l]; resetBtn.disabled=!unlocked[l]; if(!unlocked[l]) feedbackDiv.innerHTML="🔒 未解锁"; renderEditorForLevel(l); currentLevelTitle.innerText=levels[l].name; updateCriteriaHint(l,errorCount[l]); scoreDisplaySpan.innerHTML=passed[l]?"✅ 已通过":"⚡ 未通关(需≥90)"; }
+    function getCurrentContent(){ if(currentLevel===5) return {intro:document.getElementById("processIntro")?.value||"", expand:document.getElementById("processExpand")?.value||"", end:document.getElementById("processEnd")?.value||""}; else return document.getElementById("levelContent")?.value||""; }
+    function submitCurrentLevel(){
+        let cls=document.getElementById("className").value.trim(), name=document.getElementById("studentName").value.trim(), sid=document.getElementById("studentId").value.trim();
+        if(!cls||!name||!sid){ feedbackDiv.innerHTML="❌ 请填写班级姓名学号"; return; }
+        if(!unlocked[currentLevel]){ feedbackDiv.innerHTML="🔒 未解锁"; return; }
+        let cont=getCurrentContent(); if((currentLevel===5 && (!cont.intro.trim()&&!cont.expand.trim()&&!cont.end.trim())) || (currentLevel!==5 && !cont.trim())){ feedbackDiv.innerHTML="📝 内容不能为空"; return; }
+        if(currentLevel===5) contents[5]=cont; else contents[currentLevel]=cont;
+        let {score,feedback:fb}=getDetailedScore(currentLevel,cont,contents);
+        scoreDisplaySpan.innerHTML=`📊 得分: ${score}/100`;
+        if(score>=90){
+            let prev=true; for(let i=0;i<currentLevel;i++) if(!passed[i]){prev=false;break;}
+            if(!prev && currentLevel!==0){ feedbackDiv.innerHTML="⚠️ 前置未全部通关"; return; }
+            passed[currentLevel]=true; errorCount[currentLevel]=0;
+            feedbackDiv.innerHTML=`🎉 通关！得分${score} ${currentLevel+1===levels.length?'全部通关！可导出PDF和对比分析。':'下一关已解锁！'}`;
+            updateUnlockStatus();
+            if(currentLevel+1<levels.length && !passed[currentLevel+1] && unlocked[currentLevel+1]) setCurrentLevel(currentLevel+1);
+            else refreshCurrentEditorUI();
+        } else {
+            errorCount[currentLevel]++; let adv=""; if(currentLevel===1 && errorCount[1]>=3) adv="\n\n📖【改进建议】"+getIntentImprovementAdvice(cont);
+            updateCriteriaHint(currentLevel,errorCount[currentLevel]);
+            feedbackDiv.innerHTML=`❌ 得分${score}未达标。${fb} (失败${errorCount[currentLevel]}次)${adv}`;
+            if(passed[currentLevel]){ passed[currentLevel]=false; updateUnlockStatus(); }
+            refreshCurrentEditorUI();
+        }
+        renderLevelsSidebar();
+    }
+    function resetCurrentLevel(){ if(!unlocked[currentLevel]){ feedbackDiv.innerHTML="无法重置锁定的关卡"; return; } if(currentLevel===5){ let i=document.getElementById("processIntro"), e=document.getElementById("processExpand"), en=document.getElementById("processEnd"); if(i) i.value=""; if(e) e.value=""; if(en) en.value=""; contents[5]={intro:"",expand:"",end:""}; } else{ let ta=document.getElementById("levelContent"); if(ta) ta.value=""; contents[currentLevel]=""; } if(passed[currentLevel]){ passed[currentLevel]=false; updateUnlockStatus(); feedbackDiv.innerHTML="已重置通关状态"; } else feedbackDiv.innerHTML="内容已清空"; errorCount[currentLevel]=0; updateCriteriaHint(currentLevel,0); refreshCurrentEditorUI(); renderLevelsSidebar(); }
+    function setCurrentLevel(l){ currentLevel=l; refreshCurrentEditorUI(); renderLevelsSidebar(); }
+    function renderLevelsSidebar(){ levelsListDiv.innerHTML=""; for(let i=0;i<levels.length;i++){ let isUnlocked=unlocked[i], isPassed=passed[i]; let icon=isPassed?"✅":(isUnlocked?"🔓":"🔒"); let div=document.createElement("div"); div.className=`level-item ${currentLevel===i?'active':''} ${!isUnlocked?'disabled':''}`; if(isUnlocked) div.onclick=()=>setCurrentLevel(i); div.innerHTML=`<div class="level-number">${i+1}</div><div class="level-name">${levels[i].name}</div><div class="level-status">${icon}</div>`; levelsListDiv.appendChild(div); } }
+    
+    // ---------- 修复PDF导出：兼容移动端，失败降级为打印 ----------
+    function buildPrintHtml() {
+        const className = document.getElementById("className").value.trim();
+        const studentName = document.getElementById("studentName").value.trim();
+        const studentId = document.getElementById("studentId").value.trim();
+        let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>健康教案_${className}</title><style>body{font-family:SimSun,'Times New Roman',serif;padding:30px;max-width:1000px;margin:0 auto;}h1{color:#c16234;text-align:center;}.info-line{text-align:center;margin:20px 0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;padding:10px;}.section{margin-bottom:28px;page-break-inside:avoid;}.section h3{background:#fef0e6;padding:8px 16px;border-radius:30px;color:#aa5e39;}.section-content{white-space:pre-wrap;padding-left:16px;line-height:1.5;}</style></head><body>`;
+        html += `<h1>幼儿园健康领域教案</h1><div class="info-line">班级：${escapeHtml(className)} | 姓名：${escapeHtml(studentName)} | 学号：${escapeHtml(studentId)}</div>`;
+        for (let i = 0; i < levels.length; i++) {
+            const title = levels[i].name;
+            let contentText = "";
+            if (i === 5) {
+                const proc = contents[5];
+                contentText = `【导入环节】\n${proc.intro || "（未填写）"}\n\n【展开环节】\n${proc.expand || "（未填写）"}\n\n【结束环节】\n${proc.end || "（未填写）"}`;
+            } else {
+                contentText = contents[i] || "(未填写)";
+            }
+            html += `<div class="section"><h3>${i+1}. ${escapeHtml(title)}</h3><div class="section-content">${escapeHtml(contentText).replace(/\n/g, '<br>')}</div></div>`;
+        }
+        html += `<div style="margin-top:30px; text-align:right;">生成日期：${new Date().toLocaleDateString()}</div></body></html>`;
+        return html;
+    }
+    
+    async function exportFullPDF() {
+        const className = document.getElementById("className").value.trim();
+        const studentName = document.getElementById("studentName").value.trim();
+        const studentId = document.getElementById("studentId").value.trim();
+        if (!className || !studentName || !studentId) {
+            alert("请填写完整班级、姓名、学号后再导出PDF");
+            return;
+        }
+        if (!passed.every(p => p === true)) {
+            alert("请先完成全部七关且每关得分≥90，解锁所有关卡后再导出完整教案！");
+            return;
+        }
+        // 尝试使用 html2canvas + jspdf 方式
+        try {
+            const exportDiv = document.createElement('div');
+            exportDiv.className = 'pdf-export-container';
+            document.body.appendChild(exportDiv);
+            let htmlContent = `<h1>幼儿园健康领域教案</h1>`;
+            htmlContent += `<div class="info-line">班级：${escapeHtml(className)} &nbsp;| 姓名：${escapeHtml(studentName)} &nbsp;| 学号：${escapeHtml(studentId)}</div>`;
+            for (let i = 0; i < levels.length; i++) {
+                const title = levels[i].name;
+                let contentText = "";
+                if (i === 5) {
+                    const proc = contents[5];
+                    contentText = `【导入环节】\n${proc.intro || "（未填写）"}\n\n【展开环节】\n${proc.expand || "（未填写）"}\n\n【结束环节】\n${proc.end || "（未填写）"}`;
+                } else {
+                    contentText = contents[i] || "(未填写)";
+                }
+                htmlContent += `<div class="section"><h3>${i+1}. ${escapeHtml(title)}</h3><div class="section-content">${escapeHtml(contentText).replace(/\n/g, '<br>')}</div></div>`;
+            }
+            htmlContent += `<div style="margin-top:30px; text-align:right;">生成日期：${new Date().toLocaleDateString()}</div>`;
+            exportDiv.innerHTML = htmlContent;
+            await new Promise(resolve => setTimeout(resolve, 200));
+            const canvas = await html2canvas(exportDiv, {
+                scale: 1.5,          // 降低比例减少内存压力
+                backgroundColor: '#ffffff',
+                logging: false,
+                useCORS: false,
+                allowTaint: false
+            });
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const imgWidth = 210;
+            const pageHeight = 297;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let pdf = new jsPDF('p', 'mm', 'a4');
+            let position = 0;
+            if (imgHeight <= pageHeight) {
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            } else {
+                let heightLeft = imgHeight;
+                let currentPage = 0;
+                while (heightLeft > 0) {
+                    if (currentPage !== 0) pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                    position -= pageHeight;
+                    currentPage++;
+                }
+            }
+            pdf.save(`健康教案_${className}_${studentName}.pdf`);
+            document.body.removeChild(exportDiv);
+        } catch (err) {
+            console.warn("html2canvas导出失败，降级使用打印方式:", err);
+            // 降级方案：打开新窗口打印
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                alert("无法打开新窗口，请检查浏览器弹窗拦截设置，或使用电脑端导出。");
+                return;
+            }
+            printWindow.document.write(buildPrintHtml());
+            printWindow.document.close();
+            printWindow.print();
+        }
+    }
+    
+    function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]||m)).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, c=>c); }
+    
+    // ----- 成长对比分析报告 (完整度/质量/原创性) -----
+    let compareChart = null;
+    function showCompareReport(beforeText, afterContents) {
+        function parseRawTextForAllScores(rawText) {
+            let dims = { name:0, intent:0, goals:0, keypoints:0, prep:0, process:0, extend:0 };
+            let total = rawText;
+            if(/健康/.test(total)) dims.name+=30;
+            if(/小班|中班|大班/.test(total)) dims.name+=30;
+            if(total.length>10 && /：|:/.test(total)) dims.name+=40;
+            else dims.name=Math.min(dims.name,100);
+            let intentLen=total.replace(/\s/g,'').length;
+            if(intentLen>=50) dims.intent+=50;
+            if(/(《纲要》|《指南》|纲要|指南)/.test(total)) dims.intent+=25;
+            if(hasChildStatusDescription(total)) dims.intent+=25;
+            let hasCog=/知道|了解|认知|认识/.test(total), hasSkill=/能够|学会|掌握/.test(total), hasEmo=/喜欢|乐意|愿意/.test(total);
+            if(hasCog) dims.goals+=34;
+            if(hasSkill) dims.goals+=33;
+            if(hasEmo) dims.goals+=33;
+            if(/重点[:：]/.test(total)) dims.keypoints+=50;
+            if(/难点[:：]/.test(total)) dims.keypoints+=50;
+            if(/经验准备/.test(total)) dims.prep+=50;
+            if(/物质准备/.test(total)) dims.prep+=50;
+            let hasIntro=/导入|开始/.test(total), hasExpand=/展开|基本环节/.test(total), hasEnd=/结束|小结/.test(total);
+            if(hasIntro) dims.process+=34;
+            if(hasExpand) dims.process+=33;
+            if(hasEnd) dims.process+=33;
+            let ways=0;
+            if(/区角|区域|区角活动/.test(total)) ways++;
+            if(/家庭|家园|亲子/.test(total)) ways++;
+            if(/其他领域|科学|艺术|语言/.test(total)) ways++;
+            if(/日常|生活|户外/.test(total)) ways++;
+            if(ways>=2) dims.extend=100; else if(ways===1) dims.extend=60; else dims.extend=30;
+            return dims;
+        }
+        function getFinalScores(after) {
+            let dims = { name:0, intent:0, goals:0, keypoints:0, prep:0, process:0, extend:0 };
+            dims.name = getDetailedScore(0, after[0]||"", after).score;
+            dims.intent = getDetailedScore(1, after[1]||"", after).score;
+            dims.goals = getDetailedScore(2, after[2]||"", after).score;
+            dims.keypoints = getDetailedScore(3, after[3]||"", after).score;
+            dims.prep = getDetailedScore(4, after[4]||"", after).score;
+            dims.process = getDetailedScore(5, after[5], after).score;
+            dims.extend = getDetailedScore(6, after[6]||"", after).score;
+            return dims;
+        }
+        let beforeScores = parseRawTextForAllScores(beforeText);
+        let afterScores = getFinalScores(afterContents);
+        let labels = ["活动名称","设计意图","活动目标","重难点","活动准备","活动过程","活动延伸"];
+        let beforeData = [beforeScores.name, beforeScores.intent, beforeScores.goals, beforeScores.keypoints, beforeScores.prep, beforeScores.process, beforeScores.extend];
+        let afterData = [afterScores.name, afterScores.intent, afterScores.goals, afterScores.keypoints, afterScores.prep, afterScores.process, afterScores.extend];
+        
+        let completenessBefore = beforeData.filter(v=>v>=60).length;
+        let completenessAfter = afterData.filter(v=>v>=60).length;
+        let avgBefore = beforeData.reduce((a,b)=>a+b,0)/7;
+        let avgAfter = afterData.reduce((a,b)=>a+b,0)/7;
+        let textChangeRate = Math.abs(afterContents.join(" ").length - beforeText.length) / (beforeText.length+1);
+        let originalityScore = Math.min(100, (avgAfter - avgBefore) * 2 + textChangeRate * 30);
+        
+        let completenessMsg = `完整度从 ${completenessBefore}/7 个环节及格提升至 ${completenessAfter}/7。${completenessAfter>=6 ? "教案结构完整，覆盖所有必要环节。" : (completenessAfter>=4?"大部分环节已覆盖，可继续完善薄弱环节。":"请重点关注各环节的规范性和充实度。")}`;
+        let qualityMsg = `教案质量平均分由 ${avgBefore.toFixed(1)} 提升至 ${avgAfter.toFixed(1)}。${avgAfter>=85 ? "教案质量优秀，细节丰富，符合专业要求。" : (avgAfter>=70?"质量良好，但部分环节还可更深入。":"建议加强目标表述、过程细节和延伸方式的多样性。")}`;
+        let originalityMsg = `原创性与独立进步幅度: 课前课后内容变化丰富，评分提升${(avgAfter-avgBefore).toFixed(1)}分。${originalityScore>=70 ? "你的独立思考能力突出，教案有明显个人风格和创新点。" : (originalityScore>=50?"能够结合标准进行独立扩写，进步可见。":"建议在模仿优秀样例的基础上，更多地融入自己的设计思路，提升独特性。")}`;
+        let suggestion = `📌 综合建议：${completenessAfter>=6 && avgAfter>=80 ? "你已掌握健康领域教案的完整框架，可尝试挑战更复杂的主题活动或增加幼儿参与度的创新设计。" : (avgAfter>=70 ? "继续保持，重点提升薄弱环节（如重难点的精确表述、延伸的丰富性）。" : "建议多研读《指南》健康领域目标，拆解优秀教案，逐项练习每个环节的撰写。")}`;
+        
+        let modal = document.createElement("div");
+        modal.className = "report-overlay";
+        modal.innerHTML = `
+            <div class="report-card">
+                <div class="close-report" onclick="this.closest('.report-overlay').remove()">✕</div>
+                <h3>📊 教案成长深度分析报告</h3>
+                <div class="chart-container"><canvas id="compareRadarChart"></canvas></div>
+                <div class="suggestion-box">
+                    <strong>📌 教案完整度评价</strong><br>${completenessMsg}<br><br>
+                    <strong>⭐ 教案完成质量评价</strong><br>${qualityMsg}<br><br>
+                    <strong>💡 原创性与独立性评价</strong><br>${originalityMsg}<br><br>
+                    <strong>🎯 个性化建议</strong><br>${suggestion}
+                </div>
+                <p style="margin-top:12px; font-size:0.8rem; color:#888;">*报告基于课前截图OCR识别与最终闯关教案对比生成。</p>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        let ctx = document.getElementById("compareRadarChart").getContext("2d");
+        if(compareChart) compareChart.destroy();
+        compareChart = new Chart(ctx, {
+            type: 'radar',
+            data: { labels, datasets: [{ label: '课前教案', data: beforeData, backgroundColor: 'rgba(243,156,109,0.2)', borderColor: '#f39c6d', pointBackgroundColor: '#f39c6d' },
+                                       { label: '最终教案', data: afterData, backgroundColor: 'rgba(46,204,113,0.2)', borderColor: '#2ecc71', pointBackgroundColor: '#2ecc71' }] },
+            options: { responsive: true, maintainAspectRatio: true, scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } } } }
+        });
+    }
+
+    analyzeBtn.addEventListener("click", () => {
+        if(!passed.every(p=>p===true)){ alert("请先完成全部七关并通关后再进行对比分析！"); return; }
+        let uploadModal = document.createElement("div");
+        uploadModal.className = "report-overlay";
+        uploadModal.innerHTML = `
+            <div class="report-card" style="max-width:500px;">
+                <div class="close-report" onclick="this.closest('.report-overlay').remove()">✕</div>
+                <h3>📸 上传前一份教案</h3>
+                <div class="upload-area">
+                    <p>请上传前一份教案截图（清晰显示教案文字）</p>
+                    <input type="file" id="beforeImage" accept="image/*" capture>
+                    <button id="ocrBtn" class="primary" style="margin-top:12px;">🔍 识别并分析</button>
+                    <div id="ocrStatus" style="margin-top:8px; font-size:0.8rem;"></div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(uploadModal);
+        let fileInput = uploadModal.querySelector("#beforeImage");
+        let ocrBtn = uploadModal.querySelector("#ocrBtn");
+        let statusDiv = uploadModal.querySelector("#ocrStatus");
+        ocrBtn.onclick = async () => {
+            if(!fileInput.files.length){ statusDiv.innerText = "请选择图片"; return; }
+            let file = fileInput.files[0];
+            statusDiv.innerText = "⏳ OCR识别中，请稍候...";
+            try {
+             const { data: { text } } = await Tesseract.recognize(file, 'chi_sim+eng', {
+  langPath: "./lib/tesseract/",
+  workerPath: "./lib/worker.min.js",
+  corePath: "./lib/tesseract-core-simd.wasm.js",
+  gzip: false
+});
+                statusDiv.innerText = "✅ 识别完成！正在生成对比报告...";
+                setTimeout(() => {
+                    uploadModal.remove();
+                    showCompareReport(text, contents);
+                }, 500);
+            } catch(e){ statusDiv.innerText = "识别失败，请重试或确保图片清晰。"+e; }
+        };
+    });
+
+    submitBtn.addEventListener("click", submitCurrentLevel);
+    resetBtn.addEventListener("click", resetCurrentLevel);
+    exportPdfBtn.addEventListener("click", exportFullPDF);
+    
+    function init(){ 
+        renderLevelsSidebar(); 
+        unlocked=[true,false,false,false,false,false,false]; 
+        passed.fill(false); 
+        errorCount.fill(0); 
+        updateUnlockStatus(); 
+        setCurrentLevel(0); 
+        applyNoPasteToAllInputs(); 
+    }
+    init();
+</script>
+</body>
+</html>
